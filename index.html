@@ -249,21 +249,37 @@
         confirmSendBtn.innerText = "Sending...";
         confirmSendBtn.disabled = true;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            push(ref(db, 'messages/'), {
-                video: e.target.result,
-                sender: currentUser,
-                receiver: receiver,
-                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-            });
+        const CLOUD_NAME = "fmr7awgf";
+        const UPLOAD_PRESET = "vipul storage";
+
+        const formData = new FormData();
+        formData.append("file", selectedVideoFile);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.secure_url) {
+                push(ref(db, 'messages/'), {
+                    video: data.secure_url,
+                    sender: currentUser,
+                    receiver: receiver,
+                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                });
+                resetVideoForm();
+            } else {
+                alert("Upload failed. Check Cloudinary preset.");
+                resetVideoForm();
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Network error during video upload.");
             resetVideoForm();
-        };
-        reader.onerror = () => {
-            alert("Failed to read video file.");
-            resetVideoForm();
-        };
-        reader.readAsDataURL(selectedVideoFile);
+        });
     });
 
     cancelVideoBtn.addEventListener('click', () => {

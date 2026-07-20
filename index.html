@@ -29,7 +29,6 @@
         .chat-footer input[type="text"] { border: none; margin: 0; padding: 8px 12px; background: transparent; }
         .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0 5px; width: auto; }
 
-        /* WhatsApp Style Video Preview Overlay */
         #videoPreviewContainer {
             display: none;
             position: relative;
@@ -93,7 +92,6 @@
     <div id="messages"></div>
     <select id="userSelector" style="display:none; margin-bottom: 4px;"></select>
     
-    <!-- WhatsApp Jaisa Video Preview Box -->
     <div id="videoPreviewContainer">
         <button class="wa-cancel-btn" id="cancelVideoBtn">✕</button>
         <video id="videoPreview" controls></video>
@@ -101,16 +99,12 @@
     </div>
     
     <div class="chat-footer">
-        <!-- Inputs -->
         <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage()">
         <input type="file" id="videoInput" accept="video/*" style="display: none;">
         
         <input type="text" id="msgInput" placeholder="Message...">
         
-        <!-- Photo Button (Aapka purana working system) -->
         <button type="button" class="icon-btn" onclick="document.getElementById('imgInput').click()" title="Send Photo">📷</button>
-        
-        <!-- Video Button (Cloudinary Preview System) -->
         <button type="button" class="icon-btn" onclick="document.getElementById('videoInput').click()" title="Send Video">📹</button>
         
         <button onclick="sendMessage()" style="width: 60px; margin: 0; border-radius: 20px;">Send</button>
@@ -201,7 +195,6 @@
         document.getElementById("msgInput").value = "";
     };
 
-    // Photo Sending System (Aapka purana working code)[span_0](start_span)[span_0](end_span)
     window.sendImage = () => {
         const fileInput = document.getElementById('imgInput');
         const file = fileInput.files[0];
@@ -222,12 +215,11 @@
                 receiver: receiver, 
                 time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
             });
-            fileInput.value = ""; // Reset input
+            fileInput.value = "";
         };
         reader.readAsDataURL(file);
     };
 
-    // Video Preview & Cloudinary Upload Logic
     const videoInput = document.getElementById('videoInput');
     const videoPreviewContainer = document.getElementById('videoPreviewContainer');
     const videoPreview = document.getElementById('videoPreview');
@@ -257,37 +249,21 @@
         confirmSendBtn.innerText = "Sending...";
         confirmSendBtn.disabled = true;
 
-        const CLOUD_NAME = "fmr7awgf";
-        const UPLOAD_PRESET = "vipul storage";
-
-        const formData = new FormData();
-        formData.append("file", selectedVideoFile);
-        formData.append("upload_preset", UPLOAD_PRESET);
-
-        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.secure_url) {
-                push(ref(db, 'messages/'), {
-                    video: data.secure_url,
-                    sender: currentUser,
-                    receiver: receiver,
-                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                });
-                resetVideoForm();
-            } else {
-                alert("Cloudinary upload failed!");
-                resetVideoForm();
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Something went wrong during video upload.");
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            push(ref(db, 'messages/'), {
+                video: e.target.result,
+                sender: currentUser,
+                receiver: receiver,
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+            });
             resetVideoForm();
-        });
+        };
+        reader.onerror = () => {
+            alert("Failed to read video file.");
+            resetVideoForm();
+        };
+        reader.readAsDataURL(selectedVideoFile);
     });
 
     cancelVideoBtn.addEventListener('click', () => {

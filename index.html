@@ -12,18 +12,18 @@
             display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
         }
         .box { background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 20px; width: 92%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3); display: flex; flex-direction: column; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 15px; border: 2px solid #ffb6c1; box-sizing: border-box; outline: none; }
+        input, select { width: 100%; padding: 12px; margin: 6px 0; border-radius: 15px; border: 2px solid #ffb6c1; box-sizing: border-box; outline: none; }
         button { background: #ff1493; color: white; border: none; cursor: pointer; font-weight: bold; padding: 10px; border-radius: 15px; }
         
         #chatSection { display: none; height: 85vh; }
         
-        #messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 240, 245, 0.9); border-radius: 15px; margin-bottom: 10px; gap: 8px; display: flex; flex-direction: column; text-align: left; }
+        #messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 240, 245, 0.9); border-radius: 15px; margin-bottom: 8px; gap: 8px; display: flex; flex-direction: column; text-align: left; }
         .msg-container { padding: 8px 12px; border-radius: 12px; max-width: 75%; word-wrap: break-word; font-size: 14px; position: relative; }
-        .sent { background: #dcf8c6; color: #333; align-self: flex-end; border-top-right-radius: 2px; }
+        .sent { background: #ff69b4; color: white; align-self: flex-end; border-top-right-radius: 2px; }
         .received { background: #fff; color: #333; border: 1px solid #ffb6c1; align-self: flex-start; border-top-left-radius: 2px; }
         
-        img, video { max-width: 200px; border-radius: 8px; display: block; margin-top: 4px; }
-        .msg-info { font-size: 10px; font-weight: bold; margin-bottom: 2px; color: #555; }
+        img, video { max-width: 180px; border-radius: 8px; display: block; margin-top: 4px; }
+        .msg-info { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
         
         .chat-footer { display: flex; gap: 5px; align-items: center; background: #fff; padding: 5px; border-radius: 25px; border: 2px solid #ffb6c1; }
         .chat-footer input[type="text"] { border: none; margin: 0; padding: 8px 12px; background: transparent; }
@@ -36,27 +36,26 @@
             background: #000;
             border-radius: 15px;
             overflow: hidden;
-            margin-bottom: 10px;
-            max-height: 250px;
+            margin-bottom: 8px;
+            max-height: 220px;
             text-align: center;
         }
         #videoPreview {
             width: 100%;
-            max-height: 220px;
+            max-height: 180px;
             object-fit: contain;
         }
-        /* Upar left side mein WhatsApp jaisa cross button */
         .wa-cancel-btn {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 8px;
+            left: 8px;
             background: rgba(0, 0, 0, 0.6);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 16px;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -66,11 +65,11 @@
             background: #25d366;
             color: white;
             border: none;
-            padding: 8px 20px;
-            border-radius: 20px;
+            padding: 6px 16px;
+            border-radius: 15px;
             cursor: pointer;
             font-weight: bold;
-            margin: 5px 0 10px 0;
+            margin: 4px 0 8px 0;
             width: auto;
         }
     </style>
@@ -86,15 +85,15 @@
 </div>
 
 <div id="chatSection" class="box">
-    <div id="header-chat" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+    <div id="header-chat" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
         <h3 id="chatTitle" style="margin: 0; color: #ff1493;">Chat</h3>
         <button onclick="logout()" style="width: 70px; padding: 5px; font-size: 12px;">Logout</button>
     </div>
     
     <div id="messages"></div>
-    <select id="userSelector" style="display:none; margin-bottom: 5px;"></select>
+    <select id="userSelector" style="display:none; margin-bottom: 4px;"></select>
     
-    <!-- WhatsApp Jaisa Video Preview Box (Cross button ke sath) -->
+    <!-- WhatsApp Jaisa Video Preview Box -->
     <div id="videoPreviewContainer">
         <button class="wa-cancel-btn" id="cancelVideoBtn">✕</button>
         <video id="videoPreview" controls></video>
@@ -102,43 +101,32 @@
     </div>
     
     <div class="chat-footer">
-        <!-- Hidden Inputs -->
-        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(this)">
+        <!-- Inputs -->
+        <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage()">
         <input type="file" id="videoInput" accept="video/*" style="display: none;">
         
-        <!-- Text Input -->
-        <input type="text" id="msgInput" placeholder="Type a message...">
+        <input type="text" id="msgInput" placeholder="Message...">
         
-        <!-- Photo Button (Turant send hogi) -->
-        <button type="button" class="icon-btn" onclick="document.getElementById('photoInput').click()" title="Send Photo">📷</button>
+        <!-- Photo Button (Aapka purana working system) -->
+        <button type="button" class="icon-btn" onclick="document.getElementById('imgInput').click()" title="Send Photo">📷</button>
         
-        <!-- Video Button (Preview aayega) -->
+        <!-- Video Button (Cloudinary Preview System) -->
         <button type="button" class="icon-btn" onclick="document.getElementById('videoInput').click()" title="Send Video">📹</button>
         
-        <button id="sendBtn" onclick="sendMessage()" style="width: 60px; margin: 0; border-radius: 20px;">Send</button>
+        <button onclick="sendMessage()" style="width: 60px; margin: 0; border-radius: 20px;">Send</button>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded, onValue, set, get, child } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js";
 
-    const app = initializeApp({ databaseURL: "https://chat-with-vipul-default-rtdb.firebaseio.com", storageBucket: "chat-with-vipul.appspot.com" });
-    const db = getDatabase(app);
-    const storage = getStorage(app);
-
+    const db = getDatabase(initializeApp({ databaseURL: "https://chat-with-vipul-default-rtdb.firebaseio.com" }));
     let currentUser = localStorage.getItem("user");
     let isLoginMode = true;
     const ADMIN_NAME = "Vipul";
     const displayedMessages = new Set();
     let selectedVideoFile = null;
-
-    if (currentUser) {
-        document.getElementById("authBox").style.display = "none";
-        document.getElementById("chatSection").style.display = "flex";
-        startChat();
-    }
 
     window.toggleAuth = () => {
         isLoginMode = !isLoginMode;
@@ -153,30 +141,11 @@
         if (!u || !p) { alert("Please fill in both fields!"); return; }
 
         if (isLoginMode) {
-            if (u === ADMIN_NAME && p === "Vipul123") { 
-                currentUser = ADMIN_NAME; 
-                completeLogin(); 
-            } else { 
-                get(child(ref(db), `users/${u}`)).then((s) => { 
-                    if (s.exists() && s.val().password === p) { 
-                        currentUser = u; 
-                        completeLogin(); 
-                    } else { 
-                        alert("Invalid username or password!"); 
-                    } 
-                }); 
-            }
+            if (u === "Vipul" && p === "Vipul123") { currentUser = ADMIN_NAME; completeLogin(); }
+            else { get(child(ref(db), `users/${u}`)).then((s) => { if (s.exists() && s.val().password === p) { currentUser = u; completeLogin(); } else { alert("Invalid!"); } }); }
         } else {
-            set(ref(db, 'users/' + u), { name: u, password: p }).then(() => { 
-                alert("Account created successfully! Please login."); 
-                toggleAuth(); 
-            });
+            set(ref(db, 'users/' + u), { name: u, password: p }).then(() => { alert("Created!"); toggleAuth(); });
         }
-    };
-
-    window.logout = () => {
-        localStorage.removeItem("user");
-        location.reload();
     };
 
     function completeLogin() {
@@ -210,7 +179,7 @@
             if (displayedMessages.has(id)) return;
             if (currentUser === ADMIN_NAME || data.sender === currentUser || data.receiver === currentUser) {
                 const div = document.createElement("div");
-                div.className = `msg-container ${(data.sender === currentUser) ? "sent" : "received"} `;
+                div.className = `msg-container ${(data.sender === currentUser) ? "sent" : "received"}`;
                 
                 let mediaHtml = '';
                 if (data.image) mediaHtml += `<img src="${data.image}">`;
@@ -219,8 +188,7 @@
                 div.innerHTML = `<div class="msg-info">${data.sender}</div>${data.text ? '<div>' + data.text + '</div>' : ''}${mediaHtml}<div style="font-size:9px; text-align:right; margin-top:3px; opacity:0.7;">${data.time || ''}</div>`;
                 document.getElementById("messages").appendChild(div);
                 displayedMessages.add(id);
-                const msgContainer = document.getElementById("messages");
-                msgContainer.scrollTop = msgContainer.scrollHeight;
+                document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
             }
         });
     }
@@ -228,48 +196,38 @@
     window.sendMessage = () => {
         const msg = document.getElementById("msgInput").value.trim();
         const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
-        if(!msg || (currentUser === ADMIN_NAME && !receiver)) { alert("Please select a user and type a message!"); return; }
-        
-        push(ref(db, 'messages/'), { 
-            text: msg, 
-            sender: currentUser, 
-            receiver: receiver, 
-            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
-        });
+        if(!msg || (currentUser === ADMIN_NAME && !receiver)) { alert("Select user/msg empty!"); return; }
+        push(ref(db, 'messages/'), { text: msg, sender: currentUser, receiver: receiver, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
         document.getElementById("msgInput").value = "";
     };
 
-    // Photo Upload (Firebase - Select karte hi turant send)
-    window.handlePhotoUpload = function(input) {
-        const file = input.files[0];
+    // Photo Sending System (Aapka purana working code)[span_0](start_span)[span_0](end_span)
+    window.sendImage = () => {
+        const fileInput = document.getElementById('imgInput');
+        const file = fileInput.files[0];
         if (!file) return;
 
         const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
-        if (currentUser === ADMIN_NAME && !receiver) {
-            alert("Please select a user first!");
-            input.value = "";
-            return;
+        if (currentUser === ADMIN_NAME && !receiver) { 
+            alert("Select user first!"); 
+            fileInput.value = "";
+            return; 
         }
 
-        const fileRef = storageRef(storage, 'chat_photos/' + Date.now() + '_' + file.name);
-        uploadBytes(fileRef, file).then(snapshot => {
-            getDownloadURL(snapshot.ref).then(downloadURL => {
-                push(ref(db, 'messages/'), {
-                    image: downloadURL,
-                    sender: currentUser,
-                    receiver: receiver,
-                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                });
-                input.value = "";
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            push(ref(db, 'messages/'), { 
+                image: e.target.result, 
+                sender: currentUser, 
+                receiver: receiver, 
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
             });
-        }).catch(err => {
-            console.error(err);
-            alert("Photo upload failed.");
-            input.value = "";
-        });
+            fileInput.value = ""; // Reset input
+        };
+        reader.readAsDataURL(file);
     };
 
-    // Video Preview & Cloudinary Upload Logic (WhatsApp Style)
+    // Video Preview & Cloudinary Upload Logic
     const videoInput = document.getElementById('videoInput');
     const videoPreviewContainer = document.getElementById('videoPreviewContainer');
     const videoPreview = document.getElementById('videoPreview');
@@ -344,6 +302,9 @@
         confirmSendBtn.innerText = "Send Video";
         confirmSendBtn.disabled = false;
     }
+
+    window.logout = () => { localStorage.removeItem("user"); location.reload(); };
+    window.onload = () => { if(currentUser) completeLogin(); };
 </script>
 </body>
 </html>

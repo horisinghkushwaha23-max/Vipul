@@ -7,7 +7,6 @@
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            /* Naya optimized wallpaper link */
             background: url('https://img.freepik.com/free-vector/hand-drawn-valentine-s-day-background_23-2148811802.jpg') center center fixed; 
             background-size: cover; 
             display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
@@ -16,15 +15,15 @@
         input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 15px; border: 2px solid #ffb6c1; box-sizing: border-box; outline: none; }
         button { background: #ff1493; color: white; border: none; cursor: pointer; font-weight: bold; }
         
-        /* Chat screen height wapas normal aur balanced */
         #chatSection { display: none; height: 80vh; flex-direction: column; }
         
         #messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 240, 245, 0.9); border-radius: 15px; margin-bottom: 10px; gap: 8px; display: flex; flex-direction: column; }
-        .msg-container { padding: 8px 12px; border-radius: 15px; max-width: 80%; word-wrap: break-word; font-size: 14px; position: relative; }
+        .msg-container { padding: 8px 12px; border-radius: 15px; max-width: 80%; word-wrap: break-word; font-size: 14px; position: relative; text-align: left; }
         .sent { background: #ff69b4; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .received { background: #fff; color: #333; border: 1px solid #ffb6c1; align-self: flex-start; border-bottom-left-radius: 2px; }
-        img { max-width: 150px; border-radius: 10px; display: block; margin-top: 5px; }
+        img, video { max-width: 150px; border-radius: 10px; display: block; margin-top: 5px; }
         .msg-info { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
+        .chat-footer { display: flex; gap: 5px; align-items: center; }
     </style>
 </head>
 <body>
@@ -34,18 +33,27 @@
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <button id="authBtn" onclick="handleAuth()">Enter Chat</button>
-    <p id="toggleText" style="cursor:pointer; font-size: 12px;" onclick="toggleAuth()">Don't have an account? Sign Up</p>
+    <p id="toggleText" style="cursor:pointer; font-size: 12px; color: #ff1493;" onclick="toggleAuth()">Don't have an account? Sign Up</p>
 </div>
 
 <div id="chatSection" class="box">
-    <div id="header-chat"><h3 id="chatTitle">Chat</h3><button onclick="logout()">Logout</button></div>
+    <div id="header-chat" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 id="chatTitle" style="margin: 0; color: #ff1493;">Chat</h3>
+        <button onclick="logout()" style="width: 80px; padding: 6px;">Logout</button>
+    </div>
     <div id="messages"></div>
     <select id="userSelector" style="display:none;"></select>
-    <div style="display: flex; gap: 5px;">
-        <input type="text" id="msgInput" placeholder="Message...">
-        <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage()">
-        <button onclick="document.getElementById('imgInput').click()" style="width: 50px;">📷</button>
-        <button onclick="sendMessage()" style="width: 70px;">Send</button>
+    
+    <div class="chat-footer">
+        <input type="text" id="msgInput" placeholder="Message..." style="margin: 0;">
+        
+        <!-- छिपा हुआ फाइल इनपुट जो कैमरे के बटन से कंट्रोल होगा -->
+        <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaUpload(this)">
+        
+        <!-- कैमरा बटन -->
+        <button type="button" onclick="document.getElementById('mediaInput').click()" style="width: 45px; margin: 0;">📷</button>
+        
+        <button id="sendBtn" onclick="sendMessage()" style="width: 65px; margin: 0;">Send</button>
     </div>
 </div>
 
@@ -59,21 +67,59 @@
     const ADMIN_NAME = "Vipul";
     const displayedMessages = new Set();
 
+    // अगर पहले से लॉगिन है तो सीधे चैट दिखाओ
+    if (currentUser) {
+        document.getElementById("authBox").style.display = "none";
+        document.getElementById("chatSection").style.display = "flex";
+        startChat();
+    }
+
     window.toggleAuth = () => {
         isLoginMode = !isLoginMode;
         document.getElementById("authTitle").innerText = isLoginMode ? "Login" : "Sign Up";
         document.getElementById("authBtn").innerText = isLoginMode ? "Enter Chat" : "Create Account";
+        document.getElementById("toggleText").innerText = isLoginMode ? "Don't have an account? Sign Up" : "Already have an account? Login";
     };
 
     window.handleAuth = () => {
         const u = document.getElementById("username").value.trim();
         const p = document.getElementById("password").value.trim();
-        if (isLoginMode) {
-            if (u === "Vipul" && p === "Vipul123") { currentUser = ADMIN_NAME; completeLogin(); }
-            else { get(child(ref(db), `users/${u}`)).then((s) => { if (s.exists() && s.val().password === p) { currentUser = u; completeLogin(); } else { alert("Invalid!"); } }); }
-        } else {
-            set(ref(db, 'users/' + u), { name: u, password: p }).then(() => { alert("Created!"); toggleAuth(); });
+        if (!u || !p) {
+            alert("Please fill in both fields!");
+            return;
         }
+
+        if (isLoginMode) {
+            if (u === ADMIN_NAME && p === "Vipul123") { 
+                currentUser = ADMIN_NAME; 
+                completeLogin(); 
+            } else { 
+                get(child(ref(db), `users/${u}`)).then((s) => { 
+                    if (s.exists() && s.val().password === p) { 
+                        currentUser = u; 
+                        completeLogin(); 
+                    } else { 
+                        alert("Invalid username or password!"); 
+                    } 
+                }).catch(err => {
+                    console.error(err);
+                    alert("Database error during login.");
+                }); 
+            }
+        } else {
+            set(ref(db, 'users/' + u), { name: u, password: p }).then(() => { 
+                alert("Account created successfully! Please login."); 
+                toggleAuth(); 
+            }).catch(err => {
+                console.error(err);
+                alert("Signup failed.");
+            });
+        }
+    };
+
+    window.logout = () => {
+        localStorage.removeItem("user");
+        location.reload();
     };
 
     function completeLogin() {
@@ -107,12 +153,17 @@
             if (displayedMessages.has(id)) return;
             if (currentUser === ADMIN_NAME || data.sender === currentUser || data.receiver === currentUser) {
                 const div = document.createElement("div");
-                div.className = `msg-container ${(data.sender === currentUser) ? "sent" : "received"}`;
-                let imgHtml = data.image ? `<img src="${data.image}">` : '';
-                div.innerHTML = `<div class="msg-info">${data.sender}</div>${data.text || ''}${imgHtml}<div style="font-size:9px;">${data.time || ''}</div>`;
+                div.className = `msg-container ${(data.sender === currentUser) ? "sent" : "received"} `;
+                
+                let mediaHtml = '';
+                if (data.image) mediaHtml += `<img src="${data.image}">`;
+                if (data.video) mediaHtml += `<video src="${data.video}" controls></video>`;
+
+                div.innerHTML = `<div class="msg-info">${data.sender}</div>${data.text ? '<div>' + data.text + '</div>' : ''}${mediaHtml}<div style="font-size:9px; text-align:right; margin-top:3px; opacity:0.7;">${data.time || ''}</div>`;
                 document.getElementById("messages").appendChild(div);
                 displayedMessages.add(id);
-                document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+                const msgContainer = document.getElementById("messages");
+                msgContainer.scrollTop = msgContainer.scrollHeight;
             }
         });
     }
@@ -120,75 +171,77 @@
     window.sendMessage = () => {
         const msg = document.getElementById("msgInput").value.trim();
         const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
-        if(!msg || (currentUser === ADMIN_NAME && !receiver)) { alert("Select user/msg empty!"); return; }
-        push(ref(db, 'messages/'), { text: msg, sender: currentUser, receiver: receiver, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+        if(!msg || (currentUser === ADMIN_NAME && !receiver)) { alert("Please select a user and type a message!"); return; }
+        
+        push(ref(db, 'messages/'), { 
+            text: msg, 
+            sender: currentUser, 
+            receiver: receiver, 
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+        });
         document.getElementById("msgInput").value = "";
     };
 
-            <div class="chat-footer">
-            <input type="text" id="messageInput" placeholder="Message...">
-            
-            <!-- छिपा हुआ फाइल इनपुट जो कैमरे के बटन से कंट्रोल होगा -->
-            <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaUpload(this)">
-            
-            <!-- कैमरा बटन -->
-            <button type="button" onclick="document.getElementById('mediaInput').click()">📷</button>
-            
-            <button id="sendBtn">Send</button>
-        </div>
-    </div>
+    // Cloudinary और Firebase मीडिया इंटीग्रेशन कोड (सुधारित)
+    const CLOUD_NAME = "fmr7awgf";
+    const UPLOAD_PRESET = "vipul storage";
 
-    <script>
-        // Cloudinary और Firebase मीडिया इंटीग्रेशन कोड
-        const CLOUD_NAME = "fmr7awgf";
-        const UPLOAD_PRESET = "vipul storage";
+    window.handleMediaUpload = function(input) {
+        const file = input.files[0];
+        if (!file) return;
 
-        function handleMediaUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const isVideo = file.type.startsWith('video');
-            const resourceType = isVideo ? "video" : "image";
-
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("upload_preset", UPLOAD_PRESET);
-
-            alert("Uploading to Cloudinary... Please wait.");
-
-            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.secure_url) {
-                    const mediaUrl = data.secure_url;
-
-                    if (typeof currentUser !== 'undefined' && currentUser) {
-                        const messageData = {
-                            sender: currentUser,
-                            timestamp: Date.now()
-                        };
-
-                        if (isVideo) {
-                            messageData.video = mediaUrl;
-                        } else {
-                            messageData.image = mediaUrl;
-                        }
-
-                        push(ref(db, 'messages/'), messageData);
-                        alert("Sent successfully in chat!");
-                    }
-                } else {
-                    alert("Upload failed!");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Something went wrong during upload.");
-            });
+        const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
+        if (currentUser === ADMIN_NAME && !receiver) {
+            alert("Please select a user first before sending media!");
+            input.value = "";
+            return;
         }
-    </script>
+
+        const isVideo = file.type.startsWith('video');
+        const resourceType = isVideo ? "video" : "image";
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        alert("Uploading to Cloudinary... Please wait.");
+
+        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.secure_url) {
+                const mediaUrl = data.secure_url;
+
+                if (typeof currentUser !== 'undefined' && currentUser) {
+                    const messageData = {
+                        sender: currentUser,
+                        receiver: receiver,
+                        timestamp: Date.now(),
+                        time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                    };
+
+                    if (isVideo) {
+                        messageData.video = mediaUrl;
+                    } else {
+                        messageData.image = mediaUrl;
+                    }
+
+                    push(ref(db, 'messages/'), messageData);
+                    alert("Sent successfully in chat!");
+                    input.value = ""; // इनपुट रीसेट करें
+                }
+            } else {
+                alert("Upload failed!");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Something went wrong during upload.");
+        });
+    }
+</script>
 </body>
 </html>

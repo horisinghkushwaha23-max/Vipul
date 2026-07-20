@@ -11,19 +11,68 @@
             background-size: cover; 
             display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
         }
-        .box { background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3); }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 15px; border: 2px solid #ffb6c1; box-sizing: border-box; outline: none; }
-        button { background: #ff1493; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .box { background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 20px; width: 92%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3); display: flex; flex-direction: column; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 15px; border: 2px solid #ffb6c1; box-sizing: border-box; outline: none; }
+        button { background: #ff1493; color: white; border: none; cursor: pointer; font-weight: bold; padding: 10px; border-radius: 15px; }
         
-        #chatSection { display: none; height: 80vh; flex-direction: column; }
+        #chatSection { display: none; height: 85vh; }
         
-        #messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 240, 245, 0.9); border-radius: 15px; margin-bottom: 10px; gap: 8px; display: flex; flex-direction: column; }
-        .msg-container { padding: 8px 12px; border-radius: 15px; max-width: 80%; word-wrap: break-word; font-size: 14px; position: relative; text-align: left; }
-        .sent { background: #ff69b4; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: #fff; color: #333; border: 1px solid #ffb6c1; align-self: flex-start; border-bottom-left-radius: 2px; }
-        img, video { max-width: 150px; border-radius: 10px; display: block; margin-top: 5px; }
-        .msg-info { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
-        .chat-footer { display: flex; gap: 5px; align-items: center; }
+        #messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 240, 245, 0.9); border-radius: 15px; margin-bottom: 10px; gap: 8px; display: flex; flex-direction: column; text-align: left; }
+        .msg-container { padding: 8px 12px; border-radius: 12px; max-width: 75%; word-wrap: break-word; font-size: 14px; position: relative; }
+        .sent { background: #dcf8c6; color: #333; align-self: flex-end; border-top-right-radius: 2px; }
+        .received { background: #fff; color: #333; border: 1px solid #ffb6c1; align-self: flex-start; border-top-left-radius: 2px; }
+        
+        img, video { max-width: 200px; border-radius: 8px; display: block; margin-top: 4px; }
+        .msg-info { font-size: 10px; font-weight: bold; margin-bottom: 2px; color: #555; }
+        
+        .chat-footer { display: flex; gap: 5px; align-items: center; background: #fff; padding: 5px; border-radius: 25px; border: 2px solid #ffb6c1; }
+        .chat-footer input[type="text"] { border: none; margin: 0; padding: 8px 12px; background: transparent; }
+        .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0 5px; width: auto; }
+
+        /* WhatsApp Style Video Preview Overlay */
+        #videoPreviewContainer {
+            display: none;
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            max-height: 250px;
+            text-align: center;
+        }
+        #videoPreview {
+            width: 100%;
+            max-height: 220px;
+            object-fit: contain;
+        }
+        /* Upar left side mein WhatsApp jaisa cross button */
+        .wa-cancel-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wa-send-btn {
+            background: #25d366;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px 0 10px 0;
+            width: auto;
+        }
     </style>
 </head>
 <body>
@@ -37,37 +86,36 @@
 </div>
 
 <div id="chatSection" class="box">
-    <div id="header-chat" style="display: flex; justify-content: space-between; align-items: center;">
+    <div id="header-chat" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
         <h3 id="chatTitle" style="margin: 0; color: #ff1493;">Chat</h3>
-        <button onclick="logout()" style="width: 80px; padding: 6px;">Logout</button>
+        <button onclick="logout()" style="width: 70px; padding: 5px; font-size: 12px;">Logout</button>
     </div>
     
     <div id="messages"></div>
-    <select id="userSelector" style="display:none;"></select>
+    <select id="userSelector" style="display:none; margin-bottom: 5px;"></select>
     
-    <!-- WhatsApp Jaisa Video Preview Box (Shuru mein hidden rahega) -->
-    <div id="videoPreviewContainer" style="display:none; background: #fff0f5; padding: 10px; border-radius: 15px; border: 1px solid #ffb6c1; margin-bottom: 10px; text-align: center;">
-        <video id="videoPreview" width="180" controls style="border-radius: 10px; max-height: 120px; margin: 0 auto;"></video>
-        <div style="display: flex; gap: 5px; margin-top: 8px;">
-            <button id="cancelVideoBtn" style="background: #ff4d4d; margin: 0; padding: 8px;">Cancel</button>
-            <button id="confirmSendBtn" style="background: #28a745; margin: 0; padding: 8px;">Send Video</button>
-        </div>
+    <!-- WhatsApp Jaisa Video Preview Box (Cross button ke sath) -->
+    <div id="videoPreviewContainer">
+        <button class="wa-cancel-btn" id="cancelVideoBtn">✕</button>
+        <video id="videoPreview" controls></video>
+        <button class="wa-send-btn" id="confirmSendBtn">Send Video</button>
     </div>
     
     <div class="chat-footer">
-        <input type="text" id="msgInput" placeholder="Message..." style="margin: 0;">
-        
-        <!-- Alag inputs taaki Photo Firebase jaye aur Video Cloudinary -->
+        <!-- Hidden Inputs -->
         <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(this)">
         <input type="file" id="videoInput" accept="video/*" style="display: none;">
         
-        <!-- Photo Button (Firebase) -->
-        <button type="button" onclick="document.getElementById('photoInput').click()" style="width: 40px; margin: 0;" title="Send Photo">📷</button>
+        <!-- Text Input -->
+        <input type="text" id="msgInput" placeholder="Type a message...">
         
-        <!-- Video Button (Cloudinary Preview) -->
-        <button type="button" onclick="document.getElementById('videoInput').click()" style="width: 40px; margin: 0;" title="Send Video">📹</button>
+        <!-- Photo Button (Turant send hogi) -->
+        <button type="button" class="icon-btn" onclick="document.getElementById('photoInput').click()" title="Send Photo">📷</button>
         
-        <button id="sendBtn" onclick="sendMessage()" style="width: 60px; margin: 0;">Send</button>
+        <!-- Video Button (Preview aayega) -->
+        <button type="button" class="icon-btn" onclick="document.getElementById('videoInput').click()" title="Send Video">📹</button>
+        
+        <button id="sendBtn" onclick="sendMessage()" style="width: 60px; margin: 0; border-radius: 20px;">Send</button>
     </div>
 </div>
 
@@ -191,7 +239,7 @@
         document.getElementById("msgInput").value = "";
     };
 
-    // 1. Photo Upload (Firebase Storage)
+    // Photo Upload (Firebase - Select karte hi turant send)
     window.handlePhotoUpload = function(input) {
         const file = input.files[0];
         if (!file) return;
@@ -221,7 +269,7 @@
         });
     };
 
-    // 2. Video Preview & Cloudinary Upload Logic
+    // Video Preview & Cloudinary Upload Logic (WhatsApp Style)
     const videoInput = document.getElementById('videoInput');
     const videoPreviewContainer = document.getElementById('videoPreviewContainer');
     const videoPreview = document.getElementById('videoPreview');
@@ -240,7 +288,7 @@
         if (selectedVideoFile) {
             const fileURL = URL.createObjectURL(selectedVideoFile);
             videoPreview.src = fileURL;
-            videoPreviewContainer.style.display = 'block'; // WhatsApp jaisa preview dikhega
+            videoPreviewContainer.style.display = 'block';
         }
     });
 

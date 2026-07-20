@@ -41,33 +41,51 @@
         <h3 id="chatTitle" style="margin: 0; color: #ff1493;">Chat</h3>
         <button onclick="logout()" style="width: 80px; padding: 6px;">Logout</button>
     </div>
+    
     <div id="messages"></div>
     <select id="userSelector" style="display:none;"></select>
+    
+    <!-- WhatsApp Jaisa Video Preview Box (Shuru mein hidden rahega) -->
+    <div id="videoPreviewContainer" style="display:none; background: #fff0f5; padding: 10px; border-radius: 15px; border: 1px solid #ffb6c1; margin-bottom: 10px; text-align: center;">
+        <video id="videoPreview" width="180" controls style="border-radius: 10px; max-height: 120px; margin: 0 auto;"></video>
+        <div style="display: flex; gap: 5px; margin-top: 8px;">
+            <button id="cancelVideoBtn" style="background: #ff4d4d; margin: 0; padding: 8px;">Cancel</button>
+            <button id="confirmSendBtn" style="background: #28a745; margin: 0; padding: 8px;">Send Video</button>
+        </div>
+    </div>
     
     <div class="chat-footer">
         <input type="text" id="msgInput" placeholder="Message..." style="margin: 0;">
         
-        <!-- छिपा हुआ फाइल इनपुट जो कैमरे के बटन से कंट्रोल होगा -->
-        <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaUpload(this)">
+        <!-- Alag inputs taaki Photo Firebase jaye aur Video Cloudinary -->
+        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(this)">
+        <input type="file" id="videoInput" accept="video/*" style="display: none;">
         
-        <!-- कैमरा बटन -->
-        <button type="button" onclick="document.getElementById('mediaInput').click()" style="width: 45px; margin: 0;">📷</button>
+        <!-- Photo Button (Firebase) -->
+        <button type="button" onclick="document.getElementById('photoInput').click()" style="width: 40px; margin: 0;" title="Send Photo">📷</button>
         
-        <button id="sendBtn" onclick="sendMessage()" style="width: 65px; margin: 0;">Send</button>
+        <!-- Video Button (Cloudinary Preview) -->
+        <button type="button" onclick="document.getElementById('videoInput').click()" style="width: 40px; margin: 0;" title="Send Video">📹</button>
+        
+        <button id="sendBtn" onclick="sendMessage()" style="width: 60px; margin: 0;">Send</button>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded, onValue, set, get, child } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js";
 
-    const db = getDatabase(initializeApp({ databaseURL: "https://chat-with-vipul-default-rtdb.firebaseio.com" }));
+    const app = initializeApp({ databaseURL: "https://chat-with-vipul-default-rtdb.firebaseio.com", storageBucket: "chat-with-vipul.appspot.com" });
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+
     let currentUser = localStorage.getItem("user");
     let isLoginMode = true;
     const ADMIN_NAME = "Vipul";
     const displayedMessages = new Set();
+    let selectedVideoFile = null;
 
-    // अगर पहले से लॉगिन है तो सीधे चैट दिखाओ
     if (currentUser) {
         document.getElementById("authBox").style.display = "none";
         document.getElementById("chatSection").style.display = "flex";
@@ -84,10 +102,7 @@
     window.handleAuth = () => {
         const u = document.getElementById("username").value.trim();
         const p = document.getElementById("password").value.trim();
-        if (!u || !p) {
-            alert("Please fill in both fields!");
-            return;
-        }
+        if (!u || !p) { alert("Please fill in both fields!"); return; }
 
         if (isLoginMode) {
             if (u === ADMIN_NAME && p === "Vipul123") { 
@@ -101,18 +116,12 @@
                     } else { 
                         alert("Invalid username or password!"); 
                     } 
-                }).catch(err => {
-                    console.error(err);
-                    alert("Database error during login.");
                 }); 
             }
         } else {
             set(ref(db, 'users/' + u), { name: u, password: p }).then(() => { 
                 alert("Account created successfully! Please login."); 
                 toggleAuth(); 
-            }).catch(err => {
-                console.error(err);
-                alert("Signup failed.");
             });
         }
     };
@@ -182,65 +191,110 @@
         document.getElementById("msgInput").value = "";
     };
 
-    // Cloudinary और Firebase मीडिया इंटीग्रेशन कोड (सुधारित)
-    const CLOUD_NAME = "fmr7awgf";
-    const UPLOAD_PRESET = "vipul storage";
-
-    window.handleMediaUpload = function(input) {
+    // 1. Photo Upload (Firebase Storage)
+    window.handlePhotoUpload = function(input) {
         const file = input.files[0];
         if (!file) return;
 
         const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
         if (currentUser === ADMIN_NAME && !receiver) {
-            alert("Please select a user first before sending media!");
+            alert("Please select a user first!");
             input.value = "";
             return;
         }
 
-        const isVideo = file.type.startsWith('video');
-        const resourceType = isVideo ? "video" : "image";
+        const fileRef = storageRef(storage, 'chat_photos/' + Date.now() + '_' + file.name);
+        uploadBytes(fileRef, file).then(snapshot => {
+            getDownloadURL(snapshot.ref).then(downloadURL => {
+                push(ref(db, 'messages/'), {
+                    image: downloadURL,
+                    sender: currentUser,
+                    receiver: receiver,
+                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                });
+                input.value = "";
+            });
+        }).catch(err => {
+            console.error(err);
+            alert("Photo upload failed.");
+            input.value = "";
+        });
+    };
+
+    // 2. Video Preview & Cloudinary Upload Logic
+    const videoInput = document.getElementById('videoInput');
+    const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+    const videoPreview = document.getElementById('videoPreview');
+    const confirmSendBtn = document.getElementById('confirmSendBtn');
+    const cancelVideoBtn = document.getElementById('cancelVideoBtn');
+
+    videoInput.addEventListener('change', (e) => {
+        selectedVideoFile = e.target.files[0];
+        const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
+        if (currentUser === ADMIN_NAME && !receiver) {
+            alert("Please select a user first before selecting a video!");
+            videoInput.value = "";
+            return;
+        }
+
+        if (selectedVideoFile) {
+            const fileURL = URL.createObjectURL(selectedVideoFile);
+            videoPreview.src = fileURL;
+            videoPreviewContainer.style.display = 'block'; // WhatsApp jaisa preview dikhega
+        }
+    });
+
+    confirmSendBtn.addEventListener('click', () => {
+        if (!selectedVideoFile) return;
+
+        const receiver = (currentUser === ADMIN_NAME) ? document.getElementById("userSelector").value : ADMIN_NAME;
+        confirmSendBtn.innerText = "Sending...";
+        confirmSendBtn.disabled = true;
+
+        const CLOUD_NAME = "fmr7awgf";
+        const UPLOAD_PRESET = "vipul storage";
 
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", selectedVideoFile);
         formData.append("upload_preset", UPLOAD_PRESET);
 
-        alert("Uploading to Cloudinary... Please wait.");
-
-        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
+        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
             method: "POST",
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.secure_url) {
-                const mediaUrl = data.secure_url;
-
-                if (typeof currentUser !== 'undefined' && currentUser) {
-                    const messageData = {
-                        sender: currentUser,
-                        receiver: receiver,
-                        timestamp: Date.now(),
-                        time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                    };
-
-                    if (isVideo) {
-                        messageData.video = mediaUrl;
-                    } else {
-                        messageData.image = mediaUrl;
-                    }
-
-                    push(ref(db, 'messages/'), messageData);
-                    alert("Sent successfully in chat!");
-                    input.value = ""; // इनपुट रीसेट करें
-                }
+                push(ref(db, 'messages/'), {
+                    video: data.secure_url,
+                    sender: currentUser,
+                    receiver: receiver,
+                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                });
+                resetVideoForm();
             } else {
-                alert("Upload failed!");
+                alert("Cloudinary upload failed!");
+                resetVideoForm();
             }
         })
         .catch(error => {
             console.error("Error:", error);
-            alert("Something went wrong during upload.");
+            alert("Something went wrong during video upload.");
+            resetVideoForm();
         });
+    });
+
+    cancelVideoBtn.addEventListener('click', () => {
+        resetVideoForm();
+    });
+
+    function resetVideoForm() {
+        selectedVideoFile = null;
+        videoInput.value = "";
+        videoPreview.src = "";
+        videoPreviewContainer.style.display = 'none';
+        confirmSendBtn.innerText = "Send Video";
+        confirmSendBtn.disabled = false;
     }
 </script>
 </body>

@@ -125,83 +125,70 @@
         document.getElementById("msgInput").value = "";
     };
 
-        window.sendImage = () => {
-        const file = document.getElementById('imageInput').files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (currentUser === ADMIN_NAME) {
-                push(ref(db, 'messages/'), { image: e.target.result, sender: currentUser });
-            }
-        };
-        if (file) {
-            reader.readAsDataURL(file);
+            <div class="chat-footer">
+            <input type="text" id="messageInput" placeholder="Message...">
+            
+            <!-- छिपा हुआ फाइल इनपुट जो कैमरे के बटन से कंट्रोल होगा -->
+            <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaUpload(this)">
+            
+            <!-- कैमरा बटन -->
+            <button type="button" onclick="document.getElementById('mediaInput').click()">📷</button>
+            
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Cloudinary और Firebase मीडिया इंटीग्रेशन कोड
+        const CLOUD_NAME = "fmr7awgf";
+        const UPLOAD_PRESET = "vipul storage";
+
+        function handleMediaUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const isVideo = file.type.startsWith('video');
+            const resourceType = isVideo ? "video" : "image";
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", UPLOAD_PRESET);
+
+            alert("Uploading to Cloudinary... Please wait.");
+
+            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.secure_url) {
+                    const mediaUrl = data.secure_url;
+
+                    if (typeof currentUser !== 'undefined' && currentUser) {
+                        const messageData = {
+                            sender: currentUser,
+                            timestamp: Date.now()
+                        };
+
+                        if (isVideo) {
+                            messageData.video = mediaUrl;
+                        } else {
+                            messageData.image = mediaUrl;
+                        }
+
+                        push(ref(db, 'messages/'), messageData);
+                        alert("Sent successfully in chat!");
+                    }
+                } else {
+                    alert("Upload failed!");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Something went wrong during upload.");
+            });
         }
-    };
-
-    window.logout = () => {
-        localStorage.removeItem('currentUser');
-        location.reload();
-    };
-
-    window.onload = () => {
-        if (currentUser) {
-            // आपका पुराना लोड कोड...
-        }
-    };
-</script>
-
-<!-- इसे हटा दें -->
-<div>
-    <input type="file" id="videoInput" accept="video/*">
-    <button onclick="uploadToCloudinary()">Upload Video</button>
-    <p id="uploadStatus"></p>
-    <video id="uploadedVideoPlayer" width="320" height="240" controls style="display:none;"></video>
-</div>
-
-<script>
-    // Cloudinary Upload Code
-    const CLOUD_NAME = "fmr7awgf";
-    const UPLOAD_PRESET = "vipul storage";
-
-    function uploadToCloudinary() {
-        const fileInput = document.getElementById('videoInput');
-        const file = fileInput.files[0];
-        const statusText = document.getElementById('uploadStatus');
-
-        if (!file) {
-            alert("Please select a video first!");
-            return;
-        }
-
-        statusText.innerText = "Uploading... Please wait.";
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", UPLOAD_PRESET);
-
-        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.secure_url) {
-                statusText.innerText = "Video uploaded successfully!";
-                console.log("Video Link:", data.secure_url);
-
-                const videoPlayer = document.getElementById('uploadedVideoPlayer');
-                videoPlayer.src = data.secure_url;
-                videoPlayer.style.display = "block";
-            } else {
-                statusText.innerText = "Upload failed!";
-                console.error(data);
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            statusText.innerText = "Something went wrong!";
-        });
-    }
-</script>
+    </script>
 </body>
 </html>

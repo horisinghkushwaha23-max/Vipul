@@ -141,3 +141,50 @@
 </script>
 </body>
 </html>
+
+// Cloudinary API अनुरोध के लिए यह डिटेल्स डालें:
+const CLOUD_NAME = "fmr7awgf";
+const UPLOAD_PRESET = "vipul storage";
+
+function uploadToCloudinary() {
+    const fileInput = document.getElementById('videoInput');
+    const file = fileInput.files[0];
+    const statusText = document.getElementById('uploadStatus');
+
+    if (!file) {
+        alert("कृपया पहले एक वीडियो चुनें!");
+        return;
+    }
+
+    statusText.innerText = "अपलोड हो रहा है... कृपया प्रतीक्षा करें।";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.secure_url) {
+            statusText.innerText = "वीडियो सफलतापूर्वक अपलोड हो गया!";
+            console.log("वीडियो का लिंक:", data.secure_url);
+
+            // यहाँ आपको वीडियो का डायरेक्ट लिंक मिल जाएगा (data.secure_url)
+            // इसे आप अपनी वेबसाइट पर दिखाने के लिए या Firebase Realtime Database में सेव करने के लिए इस्तेमाल कर सकते हैं।
+            
+            const videoPlayer = document.getElementById('uploadedVideoPlayer');
+            videoPlayer.src = data.secure_url;
+            videoPlayer.style.display = "block";
+        } else {
+            statusText.innerText = "अपलोड फेल हो गया!";
+            console.error(data);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        statusText.innerText = "कुछ गड़बड़ हो गई!";
+    });
+}

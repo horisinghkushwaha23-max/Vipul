@@ -146,7 +146,27 @@
         localStorage.setItem("user", currentUser);
         document.getElementById("authBox").style.display = "none";
         document.getElementById("chatSection").style.display = "flex";
+        
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+        
         startChat();
+    }
+
+    function playNotificationSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        } catch(e) {}
     }
 
     function startChat() {
@@ -172,6 +192,18 @@
             const id = snapshot.key;
             if (displayedMessages.has(id)) return;
             if (currentUser === ADMIN_NAME || data.sender === currentUser || data.receiver === currentUser) {
+                
+                if (data.sender !== currentUser) {
+                    playNotificationSound();
+                    
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification(`${data.sender} ne message bheja`, {
+                            body: data.text || "Media file aayi hai",
+                            icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
+                        });
+                    }
+                }
+
                 const div = document.createElement("div");
                 div.className = `msg-container ${(data.sender === currentUser) ? "sent" : "received"}`;
                 
